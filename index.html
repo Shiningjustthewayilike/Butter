@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pocket Intelligence | Permanent License</title>
+    <title>Pocket Intelligence | Unlimited P2P</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.4.7/peerjs.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cedarville+Cursive&display=swap');
@@ -12,15 +12,22 @@
         .intro { font-family: 'Cedarville Cursive', cursive; font-size: 1.2rem; padding: 15px; text-align: center; background: white; border-bottom: 1px solid #ddd; }
         .container { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
         .card { background: white; padding: 30px; border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); width: 100%; max-width: 380px; text-align: center; }
-        .license-display { background: #1c1c1e; color: #0aff96; padding: 15px; font-family: 'Courier New', monospace; font-size: 1.3rem; margin: 20px 0; border-radius: 12px; letter-spacing: 2px; border: 1px solid #333; }
-        input { width: 100%; padding: 14px; border: 1px solid #ddd; border-radius: 12px; margin-bottom: 12px; box-sizing: border-box; font-size: 1rem; }
-        button { width: 100%; background: var(--accent); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 1rem; }
-        #chat-screen { display: none; flex-direction: column; height: 100vh; background: white; }
-        #msg-box { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
-        .msg { max-width: 80%; padding: 12px; border-radius: 15px; font-size: 0.95rem; }
+        .license-display { background: #1c1c1e; color: #0aff96; padding: 15px; font-family: monospace; font-size: 1.3rem; margin: 20px 0; border-radius: 12px; border: 1px solid #333; cursor: pointer; }
+        input[type="text"] { width: 100%; padding: 14px; border: 1px solid #ddd; border-radius: 12px; margin-bottom: 12px; box-sizing: border-box; }
+        button { width: 100%; background: var(--accent); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: bold; cursor: pointer; }
+        
+        /* Chat & Transfer UI */
+        #main-ui { display: none; flex-direction: column; height: 100vh; background: white; }
+        #output { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .msg { max-width: 80%; padding: 12px; border-radius: 15px; font-size: 0.9rem; }
         .me { align-self: flex-end; background: var(--accent); color: white; }
         .them { align-self: flex-start; background: #e9e9eb; color: black; }
-        .input-row { padding: 20px; border-top: 1px solid #eee; display: flex; gap: 10px; }
+        .file-box { border: 2px dashed var(--accent); padding: 10px; border-radius: 10px; margin-top: 5px; cursor: pointer; }
+        
+        .controls { padding: 20px; border-top: 1px solid #eee; display: flex; flex-direction: column; gap: 10px; }
+        .input-row { display: flex; gap: 10px; }
+        #progress-wrapper { height: 4px; width: 100%; background: #eee; border-radius: 2px; display: none; }
+        #progress-bar { height: 100%; width: 0%; background: #28a745; transition: width 0.1s; }
     </style>
 </head>
 <body>
@@ -29,93 +36,142 @@
 
 <div id="setup" class="container">
     <div class="card">
-        <p style="font-weight: bold; color: #666;">FIXED HARDWARE LICENSE</p>
-        <div id="my-license" class="license-display">LOADING...</div>
-        <p style="font-size: 0.75rem; color: #999;">This code is unique to this device's physical hardware and will not change if you clear history.</p>
-        <hr style="margin: 25px 0; opacity: 0.2;">
-        <input type="text" id="peer-id" placeholder="Enter Target License">
-        <button onclick="connect()">Connect Hardware</button>
+        <p style="font-weight: bold; color: #666;">HARDWARE LICENSE</p>
+        <div id="my-license" class="license-display" onclick="copyLicense()">LOADING...</div>
+        <input type="text" id="peer-id" placeholder="Enter Destination License">
+        <button onclick="connect()">Connect & Open Tunnel</button>
     </div>
 </div>
 
-<div id="chat-screen">
-    <div id="msg-box"></div>
-    <div class="input-row">
-        <input type="text" id="msg-input" placeholder="Type a message..." style="margin:0">
-        <button onclick="send()" style="width: auto; padding: 0 25px;">Send</button>
+<div id="main-ui">
+    <div id="output"></div>
+    <div id="progress-wrapper"><div id="progress-bar"></div></div>
+    <div class="controls">
+        <div class="input-row">
+            <input type="text" id="msg-input" placeholder="Type or share any file..." style="flex:1; border: 1px solid #ddd; border-radius: 10px; padding: 10px;">
+            <button onclick="sendText()" style="width: auto; padding: 0 20px;">Send</button>
+        </div>
+        <button onclick="document.getElementById('file-input').click()" style="background: #34c759;">+ Share Unlimited File</button>
+        <input type="file" id="file-input" style="display:none" onchange="sendFile(this.files[0])">
     </div>
 </div>
 
 <script>
     let peer, conn;
+    const CHUNK_SIZE = 16384; // 16KB chunks for maximum stability
 
-    // --- PERMANENT HARDWARE FINGERPRINTING ---
-    async function getHardwareFingerprint() {
+    // 1. Permanent Hardware Fingerprint
+    async function getID() {
         const canvas = document.createElement('canvas');
         const gl = canvas.getContext('webgl');
-        const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-        
-        // Components that do not change with history/cache:
-        const hardwareSpecs = [
-            gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL), // GPU Name
-            gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL),   // GPU Vendor
-            screen.colorDepth,
-            navigator.hardwareConcurrency, // CPU Cores
-            screen.width + "x" + screen.height // Resolution
-        ].join('|');
-
-        // Hash the hardware string
+        const debug = gl.getExtension('WEBGL_debug_renderer_info');
+        const specs = [gl.getParameter(debug.UNMASKED_RENDERER_WEBGL), screen.width, screen.height, navigator.hardwareConcurrency].join('|');
         let hash = 0;
-        for (let i = 0; i < hardwareSpecs.length; i++) {
-            hash = ((hash << 5) - hash) + hardwareSpecs.charCodeAt(i);
-            hash |= 0;
-        }
+        for (let i = 0; i < specs.length; i++) hash = ((hash << 5) - hash) + specs.charCodeAt(i);
         return "HW-" + Math.abs(hash).toString(16).toUpperCase().padStart(6, '0');
     }
 
     async function init() {
-        const license = await getHardwareFingerprint();
+        const license = await getID();
         document.getElementById('my-license').innerText = license;
-
-        // Use the hardware license as the Peer ID
-        peer = new Peer(license, {
-            config: {'iceServers': [{ 'urls': 'stun:stun.l.google.com:19302' }]}
-        });
-
-        peer.on('connection', c => {
-            conn = c;
-            setupLink();
-        });
+        peer = new Peer(license, { config: {'iceServers': [{ 'urls': 'stun:stun.l.google.com:19302' }]} });
+        peer.on('connection', c => { conn = c; setupHandlers(); });
     }
 
     function connect() {
-        const id = document.getElementById('peer-id').value.toUpperCase();
-        conn = peer.connect(id);
-        setupLink();
+        const target = document.getElementById('peer-id').value.toUpperCase();
+        conn = peer.connect(target);
+        setupHandlers();
     }
 
-    function setupLink() {
+    function setupHandlers() {
         conn.on('open', () => {
             document.getElementById('setup').style.display = 'none';
-            document.getElementById('chat-screen').style.display = 'flex';
+            document.getElementById('main-ui').style.display = 'flex';
         });
-        conn.on('data', data => addMsg(data, 'them'));
+
+        let incomingFile = null;
+        conn.on('data', data => {
+            if (data.type === 'meta') {
+                incomingFile = { name: data.name, size: data.size, chunks: [], received: 0 };
+                updateProgress(0);
+            } else if (data.type === 'chunk') {
+                incomingFile.chunks.push(data.data);
+                incomingFile.received += data.data.byteLength;
+                updateProgress((incomingFile.received / incomingFile.size) * 100);
+                
+                if (incomingFile.received >= incomingFile.size) {
+                    const blob = new Blob(incomingFile.chunks);
+                    addFileMsg(incomingFile.name, URL.createObjectURL(blob), 'them');
+                    incomingFile = null;
+                    updateProgress(0, false);
+                }
+            } else {
+                addMsg(data, 'them');
+            }
+        });
     }
 
-    function send() {
-        const msg = document.getElementById('msg-input').value;
-        if(!msg) return;
-        conn.send(msg);
-        addMsg(msg, 'me');
-        document.getElementById('msg-input').value = '';
+    // 2. UNLIMITED FILE STREAMING LOGIC
+    function sendFile(file) {
+        if (!file) return;
+        conn.send({ type: 'meta', name: file.name, size: file.size });
+        
+        let offset = 0;
+        const reader = new FileReader();
+        updateProgress(0, true);
+
+        reader.onload = e => {
+            conn.send({ type: 'chunk', data: e.target.result });
+            offset += e.target.result.byteLength;
+            updateProgress((offset / file.size) * 100);
+            if (offset < file.size) readNext();
+            else {
+                addFileMsg(file.name, '#', 'me');
+                updateProgress(0, false);
+            }
+        };
+
+        const readNext = () => {
+            const slice = file.slice(offset, offset + CHUNK_SIZE);
+            reader.readAsArrayBuffer(slice);
+        };
+        readNext();
+    }
+
+    function sendText() {
+        const input = document.getElementById('msg-input');
+        if (!input.value) return;
+        conn.send(input.value);
+        addMsg(input.value, 'me');
+        input.value = '';
     }
 
     function addMsg(text, type) {
-        const div = document.createElement('div');
-        div.className = `msg ${type}`;
-        div.innerText = text;
-        document.getElementById('msg-box').appendChild(div);
-        document.getElementById('msg-box').scrollTop = document.getElementById('msg-box').scrollHeight;
+        const d = document.createElement('div');
+        d.className = `msg ${type}`;
+        d.innerText = text;
+        document.getElementById('output').appendChild(d);
+        document.getElementById('output').scrollTop = document.getElementById('output').scrollHeight;
+    }
+
+    function addFileMsg(name, url, type) {
+        const d = document.createElement('div');
+        d.className = `msg ${type}`;
+        d.innerHTML = `<b>File Shared:</b><br><a href="${url}" download="${name}" style="color:inherit">${name}</a>`;
+        document.getElementById('output').appendChild(d);
+    }
+
+    function updateProgress(val, show = true) {
+        const w = document.getElementById('progress-wrapper');
+        const b = document.getElementById('progress-bar');
+        w.style.display = show ? 'block' : 'none';
+        b.style.width = val + '%';
+    }
+
+    function copyLicense() {
+        navigator.clipboard.writeText(document.getElementById('my-license').innerText);
+        alert("License Copied!");
     }
 
     init();
