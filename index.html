@@ -3,148 +3,122 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pocket Intelligence | Private Chat</title>
+    <title>Pocket Intelligence | Permanent License</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.4.7/peerjs.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cedarville+Cursive&display=swap');
-        
-        :root { --accent: #007aff; --bg: #f2f2f7; --me: #007aff; --them: #e9e9eb; }
-
+        :root { --accent: #007aff; --bg: #f2f2f7; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; display: flex; flex-direction: column; height: 100vh; }
-        
-        /* Intro Branding */
         .intro { font-family: 'Cedarville Cursive', cursive; font-size: 1.2rem; padding: 15px; text-align: center; background: white; border-bottom: 1px solid #ddd; }
-
-        .setup-screen { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
-        
-        .card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); width: 100%; max-width: 350px; text-align: center; }
-
-        .license-tag { background: #f8f9fa; border: 2px solid #007aff; padding: 10px; font-family: monospace; font-weight: bold; font-size: 1.1rem; margin: 15px 0; border-radius: 10px; color: var(--accent); cursor: pointer; }
-
-        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; margin-bottom: 10px; box-sizing: border-box; }
-
-        button { width: 100%; background: var(--accent); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; }
-
-        /* Chat Interface */
-        #chat-screen { display: none; flex-direction: column; height: 100vh; }
-        #messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
-        .msg { max-width: 70%; padding: 10px 15px; border-radius: 18px; font-size: 0.95rem; line-height: 1.4; }
-        .msg.me { align-self: flex-end; background: var(--me); color: white; border-bottom-right-radius: 2px; }
-        .msg.them { align-self: flex-start; background: var(--them); color: black; border-bottom-left-radius: 2px; }
-
-        .input-area { background: white; padding: 15px; display: flex; gap: 10px; border-top: 1px solid #ddd; }
-        .hidden { display: none; }
+        .container { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+        .card { background: white; padding: 30px; border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); width: 100%; max-width: 380px; text-align: center; }
+        .license-display { background: #1c1c1e; color: #0aff96; padding: 15px; font-family: 'Courier New', monospace; font-size: 1.3rem; margin: 20px 0; border-radius: 12px; letter-spacing: 2px; border: 1px solid #333; }
+        input { width: 100%; padding: 14px; border: 1px solid #ddd; border-radius: 12px; margin-bottom: 12px; box-sizing: border-box; font-size: 1rem; }
+        button { width: 100%; background: var(--accent); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 1rem; }
+        #chat-screen { display: none; flex-direction: column; height: 100vh; background: white; }
+        #msg-box { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .msg { max-width: 80%; padding: 12px; border-radius: 15px; font-size: 0.95rem; }
+        .me { align-self: flex-end; background: var(--accent); color: white; }
+        .them { align-self: flex-start; background: #e9e9eb; color: black; }
+        .input-row { padding: 20px; border-top: 1px solid #eee; display: flex; gap: 10px; }
     </style>
 </head>
 <body>
 
-    <div class="intro">The Intelligence that Lives in Your Pocket, Not the Cloud</div>
+<div class="intro">The Intelligence that Lives in Your Pocket, Not the Cloud</div>
 
-    <div id="setup-screen" class="setup-screen">
-        <div class="card">
-            <p style="font-size: 0.8rem; color: #666;">YOUR UNIQUE DEVICE LICENSE:</p>
-            <div id="my-license" class="license-tag" title="Click to copy">Generating...</div>
-            
-            <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
-            
-            <p style="font-size: 0.8rem; color: #666;">CONNECT TO OTHER LICENSE:</p>
-            <input type="text" id="target-license" placeholder="Enter License Code">
-            <button onclick="connectToPartner()">Initiate Chat</button>
-        </div>
+<div id="setup" class="container">
+    <div class="card">
+        <p style="font-weight: bold; color: #666;">FIXED HARDWARE LICENSE</p>
+        <div id="my-license" class="license-display">LOADING...</div>
+        <p style="font-size: 0.75rem; color: #999;">This code is unique to this device's physical hardware and will not change if you clear history.</p>
+        <hr style="margin: 25px 0; opacity: 0.2;">
+        <input type="text" id="peer-id" placeholder="Enter Target License">
+        <button onclick="connect()">Connect Hardware</button>
     </div>
+</div>
 
-    <div id="chat-screen">
-        <div id="messages"></div>
-        <div class="input-area">
-            <input type="text" id="chat-input" placeholder="Type a private message..." onkeypress="if(event.key==='Enter') sendMessage()">
-            <button onclick="sendMessage()" style="width: 80px;">Send</button>
-        </div>
+<div id="chat-screen">
+    <div id="msg-box"></div>
+    <div class="input-row">
+        <input type="text" id="msg-input" placeholder="Type a message..." style="margin:0">
+        <button onclick="send()" style="width: auto; padding: 0 25px;">Send</button>
     </div>
+</div>
 
-    <script>
-        let peer;
-        let connection;
+<script>
+    let peer, conn;
 
-        // 1. Generate a UNIQUE license for this hardware
-        function generateHardwareLicense() {
-            const fingerprint = [
-                navigator.userAgent.length,
-                screen.width,
-                screen.height,
-                navigator.hardwareConcurrency || 4
-            ].join('-');
-            // Simple hash function to create a unique-ish string
-            let hash = 0;
-            for (let i = 0; i < fingerprint.length; i++) {
-                hash = ((hash << 5) - hash) + fingerprint.charCodeAt(i);
-                hash |= 0; 
-            }
-            return "PKT-" + Math.abs(hash).toString(16).toUpperCase();
+    // --- PERMANENT HARDWARE FINGERPRINTING ---
+    async function getHardwareFingerprint() {
+        const canvas = document.createElement('canvas');
+        const gl = canvas.getContext('webgl');
+        const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+        
+        // Components that do not change with history/cache:
+        const hardwareSpecs = [
+            gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL), // GPU Name
+            gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL),   // GPU Vendor
+            screen.colorDepth,
+            navigator.hardwareConcurrency, // CPU Cores
+            screen.width + "x" + screen.height // Resolution
+        ].join('|');
+
+        // Hash the hardware string
+        let hash = 0;
+        for (let i = 0; i < hardwareSpecs.length; i++) {
+            hash = ((hash << 5) - hash) + hardwareSpecs.charCodeAt(i);
+            hash |= 0;
         }
+        return "HW-" + Math.abs(hash).toString(16).toUpperCase().padStart(6, '0');
+    }
 
-        const myUniqueId = generateHardwareLicense();
-        document.getElementById('my-license').innerText = myUniqueId;
+    async function init() {
+        const license = await getHardwareFingerprint();
+        document.getElementById('my-license').innerText = license;
 
-        // 2. Initialize Peer with unique hardware ID
-        peer = new Peer(myUniqueId, {
+        // Use the hardware license as the Peer ID
+        peer = new Peer(license, {
             config: {'iceServers': [{ 'urls': 'stun:stun.l.google.com:19302' }]}
         });
 
-        peer.on('open', (id) => {
-            console.log('Online with License:', id);
+        peer.on('connection', c => {
+            conn = c;
+            setupLink();
         });
+    }
 
-        // 3. Handle Incoming Connection
-        peer.on('connection', (conn) => {
-            connection = conn;
-            setupChat();
+    function connect() {
+        const id = document.getElementById('peer-id').value.toUpperCase();
+        conn = peer.connect(id);
+        setupLink();
+    }
+
+    function setupLink() {
+        conn.on('open', () => {
+            document.getElementById('setup').style.display = 'none';
+            document.getElementById('chat-screen').style.display = 'flex';
         });
+        conn.on('data', data => addMsg(data, 'them'));
+    }
 
-        // 4. Initiate Connection to another License
-        function connectToPartner() {
-            const target = document.getElementById('target-license').value.trim().toUpperCase();
-            if(!target) return alert("Enter a valid License!");
-            
-            connection = peer.connect(target);
-            setupChat();
-        }
+    function send() {
+        const msg = document.getElementById('msg-input').value;
+        if(!msg) return;
+        conn.send(msg);
+        addMsg(msg, 'me');
+        document.getElementById('msg-input').value = '';
+    }
 
-        function setupChat() {
-            connection.on('open', () => {
-                document.getElementById('setup-screen').style.display = 'none';
-                document.getElementById('chat-screen').style.display = 'flex';
-                appendMessage("System", "Encrypted Tunnel Established. No data is being stored on the cloud.", "them");
-            });
+    function addMsg(text, type) {
+        const div = document.createElement('div');
+        div.className = `msg ${type}`;
+        div.innerText = text;
+        document.getElementById('msg-box').appendChild(div);
+        document.getElementById('msg-box').scrollTop = document.getElementById('msg-box').scrollHeight;
+    }
 
-            connection.on('data', (data) => {
-                appendMessage("Them", data, "them");
-            });
-        }
-
-        function sendMessage() {
-            const input = document.getElementById('chat-input');
-            const msg = input.value;
-            if(!msg) return;
-
-            connection.send(msg);
-            appendMessage("Me", msg, "me");
-            input.value = "";
-        }
-
-        function appendMessage(sender, text, type) {
-            const container = document.getElementById('messages');
-            const div = document.createElement('div');
-            div.className = `msg ${type}`;
-            div.innerText = text;
-            container.appendChild(div);
-            container.scrollTop = container.scrollHeight;
-        }
-
-        // Copy license to clipboard
-        document.getElementById('my-license').onclick = function() {
-            navigator.clipboard.writeText(this.innerText);
-            alert("License copied! Send this to your partner.");
-        }
-    </script>
+    init();
+</script>
 </body>
 </html>
